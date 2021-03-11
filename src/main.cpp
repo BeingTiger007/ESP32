@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include "WiFi.h"
+#include "DHT.h"
 
 /* Author : Aslam Shaikh
 *  Date : 07-03-2021
@@ -8,8 +9,9 @@
 */
 
 #define WIFI_NETWORK "ASLAM SHAIKH 1" // defined constant value wifi ssid
-#define WIFI_PASSWORD "8855954049vbn" // defined constant value wifi pass
+#define WIFI_PASSWORD "8855954049dfg" // defined constant value wifi pass
 #define WIFI_TIMEOUT_MS 60000         // defined constant value 60 seconds
+#define DHTTYPE DHT11                 // Setting up sensor DHT sensor type to DHT11
 
 /*  GPIO D13 & GPIO D15 are used by WiFi.h Library 
 *   Connect Analog pin A0 of MQ6 to GPIO D34 pin
@@ -19,10 +21,44 @@
 #define SENSOR_MQ6 34 // MQ6 Sensor analog pin A0 at GPIO pin 34
 #define LED_GREEN 13  // LED GREEN output pin at GPIO pin 13
 #define LED_RED 12    // LED RED output pin at GPIO pin 12
-#define BUILT_LED 2   // BUILTIN LED output at GPIO pin 2
+#define BUILT_LED 2   // BUILTIN LED output at GPIO pin 02
+#define DHT_PIN 4     // Set DHT11 sensor pin at GPIO pin 04
 
 int sensorValue;   // For storing the analog input value from sensor to ESP32( max 4095 )
 float sensorVolts; // For storing the voltage input value from sensor to ESP32 ( max 5.0 )
+float temperature; // For storing the temperature input value from DHT11 sensor
+float humidity;    // For storing the humidity input value from DHT11 sensor
+
+// Initialize DHT sensor.
+DHT dht(DHT_PIN, DHTTYPE);
+
+float readDHTTemperature()
+{
+  float t = dht.readTemperature();
+  if (isnan(t))
+  {
+    Serial.println("Failed to read from DHT sensor!");
+    return 0.0;
+  }
+  else
+  {
+    return t;
+  }
+}
+
+float readDHTHumidity()
+{
+  float h = dht.readHumidity();
+  if (isnan(h))
+  {
+    Serial.println("Failed to read from DHT sensor!");
+    return 0.0;
+  }
+  else
+  {
+    return h;
+  }
+}
 
 void connectionToWiFi()
 {
@@ -49,7 +85,7 @@ void connectionToWiFi()
   }
 }
 
-void readSensor()
+void readMQ6Sensor()
 {
 
   // read analog input from GPIO 34 of ESP32 ( ADC1 CH6 == GPIO 34 )
@@ -69,6 +105,8 @@ void readSensor()
     Serial.println("\n\nGas detected !");
     Serial.printf("\nSensor Value = %.2f", (float)sensorValue);
     Serial.printf("\nSensor Volts = %.5f", (float)sensorVolts);
+    Serial.printf("\nTemperature : %.2f", readDHTTemperature());
+    Serial.printf("\nHumidity : %.2f", readDHTHumidity());
 
     digitalWrite(BUILT_LED, HIGH);
     delay(100);
@@ -80,6 +118,8 @@ void readSensor()
     Serial.println("\n\nGas not detected !");
     Serial.printf("\nSensor Value = %.2f", (float)sensorValue);
     Serial.printf("\nSensor Volts = %.5f", (float)sensorVolts);
+    Serial.printf("\nTemperature : %.2f", readDHTTemperature());
+    Serial.printf("\nHumidity : %.2f", readDHTHumidity());
     delay(200);
   }
   delay(100);
@@ -94,10 +134,12 @@ void setup()
 
   Serial.begin(9600);
   connectionToWiFi();
+
+  dht.begin();
 }
 
 void loop()
 {
   // put your main code here, to run repeatedly:
-  readSensor();
+  readMQ6Sensor();
 }
